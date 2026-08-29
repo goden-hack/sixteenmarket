@@ -181,6 +181,13 @@
   .pw-strength.weak{color:var(--coral-deep);}
   .pw-strength.medium{color:var(--amber-deep);}
   .pw-strength.strong{color:var(--turquoise-deep);}
+  .pw-field{position:relative;}
+  .pw-field input{width:100%;padding-right:4.4rem;}
+  .pw-toggle{
+    position:absolute;right:.4rem;top:50%;transform:translateY(-50%);
+    background:none;border:none;cursor:pointer;font-size:.75rem;font-weight:600;
+    padding:.3rem .5rem;color:var(--ink-soft);font-family:'Quicksand',sans-serif;
+  }
   .cookie-banner{
     position:fixed;bottom:0;left:0;right:0;z-index:9995;
     background:var(--ink);color:var(--paper);
@@ -324,11 +331,29 @@
       <button type="submit" class="dl-btn">Mettre à jour le pseudo</button>
     </form>
     <form class="auth-form" id="passwordForm">
-      <label>Nouveau mot de passe<input type="password" id="settingsPassword" minlength="8" required></label>
+      <label>Ancien mot de passe
+        <div class="pw-field"><input type="password" id="settingsOldPassword" required><button type="button" class="pw-toggle" data-target="settingsOldPassword">Afficher</button></div>
+      </label>
+      <label>Nouveau mot de passe
+        <div class="pw-field"><input type="password" id="settingsPassword" minlength="8" required><button type="button" class="pw-toggle" data-target="settingsPassword">Afficher</button></div>
+      </label>
       <p class="pw-strength" id="settingsPwStrength"></p>
+      <label>Confirmer le nouveau mot de passe
+        <div class="pw-field"><input type="password" id="settingsPasswordConfirm" minlength="8" required><button type="button" class="pw-toggle" data-target="settingsPasswordConfirm">Afficher</button></div>
+      </label>
       <button type="submit" class="dl-btn">Changer le mot de passe</button>
     </form>
     <p class="form-note" id="settingsNote"></p>
+    <div class="admin-block">
+      <h3>Supprimer mon compte</h3>
+      <p class="form-note">Action définitive et irréversible.</p>
+      <form class="auth-form" id="deleteAccountForm">
+        <label>Confirme avec ton mot de passe
+          <div class="pw-field"><input type="password" id="deleteAccountPassword" required><button type="button" class="pw-toggle" data-target="deleteAccountPassword">Afficher</button></div>
+        </label>
+        <button type="submit" class="mini-btn danger">Supprimer définitivement mon compte</button>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -343,7 +368,9 @@
   <form class="auth-form" id="authForm">
     <label id="pseudoField" hidden>Pseudo<input type="text" id="authPseudo"></label>
     <label>Email<input type="email" id="authEmail" required></label>
-    <label>Mot de passe<input type="password" id="authPassword" required minlength="8"></label>
+    <label>Mot de passe
+      <div class="pw-field"><input type="password" id="authPassword" required minlength="8"><button type="button" class="pw-toggle" data-target="authPassword">Afficher</button></div>
+    </label>
     <p class="pw-strength" id="authPwStrength"></p>
     <button type="submit" class="dl-btn" id="authSubmitBtn">Se connecter</button>
   </form>
@@ -593,20 +620,70 @@
   });
   document.getElementById('passwordForm').addEventListener('submit', function(e){
     e.preventDefault();
+    var oldPassword = document.getElementById('settingsOldPassword').value;
     var newPassword = document.getElementById('settingsPassword').value;
+    var confirmPassword = document.getElementById('settingsPasswordConfirm').value;
     var note = document.getElementById('settingsNote');
+    if(newPassword !== confirmPassword){
+      note.style.color = 'var(--coral-deep)';
+      note.textContent = 'Les deux nouveaux mots de passe ne correspondent pas.';
+      return;
+    }
     if(!passwordStrengthInfo(newPassword).valid){
       note.style.color = 'var(--coral-deep)';
       note.textContent = 'Choisis un mot de passe plus fort (8 caractères min., majuscule, minuscule, chiffre).';
       return;
     }
-    sb.auth.updateUser({ password:newPassword }).then(function(res){
-      if(res.error){ note.style.color='var(--coral-deep)'; note.textContent='Erreur : '+res.error.message; return; }
-      document.getElementById('passwordForm').reset();
-      document.getElementById('settingsPwStrength').textContent='';
-      note.style.color='var(--turquoise-deep)';
-      note.textContent='Mot de passe mis à jour.';
+    note.style.color = 'var(--ink-soft)';
+    note.textContent = 'Vérification...';
+    sb.auth.signInWithPassword({ email: state.email, password: oldPassword }).then(function(checkRes){
+      if(checkRes.error){
+        note.style.color = 'var(--coral-deep)';
+        note.textContent = "L'ancien mot de passe est incorrect.";
+        return;
+      }
+      sb.auth.updateUser({ password:newPassword }).then(function(res){
+        if(res.error){ note.style.color='var(--coral-deep)'; note.textContent='Erreur : '+res.error.message; return; }
+        document.getElementById('passwordForm').reset();
+        document.getElementById('settingsPwStrength').textContent='';
+        note.style.color='var(--turquoise-deep)';
+        note.textContent='Mot de passe mis à jour.';
+      });
     });
+  });
+
+  document.getElementById('deleteAccountForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var password = document.getElementById('deleteAccountPassword').value;
+    var note = document.getElementById('settingsNote');
+    if(!confirm('Supprimer définitivement ton compte ? Cette action ne peut pas être annulée.')) return;
+    note.style.color = 'var(--ink-soft)';
+    note.textContent = 'Vérification...';
+    sb.auth.signInWithPassword({ email: state.email, password: password }).then(function(checkRes){
+      if(checkRes.error){
+        note.style.color = 'var(--coral-deep)';
+        note.textContent = 'Mot de passe incorrect.';
+        return;
+      }
+      sb.rpc('delete_own_account').then(function(res){
+        if(res.error){ note.style.color='var(--coral-deep)'; note.textContent='Erreur : '+res.error.message; return; }
+        alert('Ton compte a été supprimé.');
+        state.loggedIn=false; state.isAdmin=false; state.pseudo=''; state.email='';
+        document.getElementById('authNavLink').hidden=false;
+        document.getElementById('navUser').hidden=true;
+        document.getElementById('adminNavLink').hidden=true;
+        goToScreen('accueil');
+      });
+    });
+  });
+
+  document.addEventListener('click', function(e){
+    var toggle = e.target.closest('.pw-toggle');
+    if(!toggle) return;
+    var input = document.getElementById(toggle.getAttribute('data-target'));
+    if(!input) return;
+    if(input.type === 'password'){ input.type = 'text'; toggle.textContent = 'Masquer'; }
+    else{ input.type = 'password'; toggle.textContent = 'Afficher'; }
   });
 
   var sb = supabase.createClient('https://txbvpddpsejtfjvixdfw.supabase.co', 'sb_publishable_DzvshGmn8ev43bDoPlpnkQ_BIMINTsR', { auth: { persistSession: false } });
