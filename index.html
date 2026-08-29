@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SixteenMarket</title>
-<meta name="description" content="SixteenMarket — découvre et télécharge des applications, laisse tes retours, rejoins la communauté.">
-<meta property="og:title" content="SixteenMarket">
-<meta property="og:description" content="16 lettres avant, une idée après. Découvre et télécharge des applications, rejoins la communauté.">
-<meta property="og:type" content="website">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SixteenMarket</title>
+  
+  <!-- Balise de vérification Google Search Console -->
+  <meta name="google-site-verification" content="2VhcYexNEVpv9bPOUC2q0QY6xllimgFAcB1pTVAM-fc" />
+
+  <meta name="description" content="SixteenMarket — découvre et télécharge des applications, laisse tes retours, rejoins la communauté.">
+  <meta property="og:title" content="SixteenMarket">
+  <meta property="og:description" content="16 lettres avant, une idée après. Découvre et télécharge des applications, rejoins la communauté.">
+  <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Ccircle%20cx='32'%20cy='32'%20r='30'%20fill='%23EADFC2'%20stroke='%233E362C'%20stroke-width='2'/%3E%3Cellipse%20cx='23'%20cy='27'%20rx='15'%20ry='12'%20fill='%235FA898'%20opacity='0.88'/%3E%3Cellipse%20cx='42'%20cy='24'%20rx='13'%20ry='11'%20fill='%23E2896A'%20opacity='0.88'/%3E%3Cellipse%20cx='32'%20cy='43'%20rx='14'%20ry='11'%20fill='%23A784B0'%20opacity='0.88'/%3E%3C/svg%3E">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Quicksand:wght@500;600;700&display=swap');
@@ -175,7 +179,6 @@
   .auth-form{display:flex;flex-direction:column;gap:1rem;max-width:340px;position:relative;z-index:2;}
   .auth-form label{display:flex;flex-direction:column;gap:.3rem;font-size:.9rem;color:var(--ink-soft);}
   .auth-form input[type=text],.auth-form input[type=email],.auth-form input[type=password]{padding:.5rem .8rem;border:2px solid var(--paper-deep);border-radius:14px;font-family:'Quicksand',sans-serif;background:var(--paper);color:var(--ink);}
-  .checkbox-label{flex-direction:row !important;align-items:center;gap:.5rem !important;}
   .form-note{font-size:.8rem;color:var(--ink-soft);margin-top:1rem;font-style:italic;}
   .pw-strength{font-size:.78rem;margin:-.6rem 0 0;min-height:1em;}
   .pw-strength.weak{color:var(--coral-deep);}
@@ -307,7 +310,7 @@
       <div class="chat-main">
         <div class="chat-messages" id="chatMessages"></div>
         <form class="chat-form" id="chatForm">
-          <input type="text" id="chatInput" placeholder="Écris un message…" autocomplete="off">
+          <input type="text" id="chatInput" placeholder="Écris un message…" autocomplete="off" maxlength="500">
           <button type="submit" class="dl-btn">Envoyer</button>
         </form>
       </div>
@@ -327,7 +330,7 @@
     <h2 class="screen-title">Mon compte</h2>
     <p class="form-note">Connecté avec <strong id="settingsEmail"></strong></p>
     <form class="auth-form" id="pseudoForm">
-      <label>Pseudo<input type="text" id="settingsPseudo"></label>
+      <label>Pseudo<input type="text" id="settingsPseudo" maxlength="24"></label>
       <button type="submit" class="dl-btn">Mettre à jour le pseudo</button>
     </form>
     <form class="auth-form" id="passwordForm">
@@ -366,12 +369,15 @@
     <button type="button" class="auth-tab" data-auth-mode="signup">Créer un compte</button>
   </div>
   <form class="auth-form" id="authForm">
-    <label id="pseudoField" hidden>Pseudo<input type="text" id="authPseudo"></label>
+    <label id="pseudoField" hidden>Pseudo<input type="text" id="authPseudo" maxlength="24"></label>
     <label>Email<input type="email" id="authEmail" required></label>
     <label>Mot de passe
       <div class="pw-field"><input type="password" id="authPassword" required minlength="8"><button type="button" class="pw-toggle" data-target="authPassword">Afficher</button></div>
     </label>
     <p class="pw-strength" id="authPwStrength"></p>
+    <label id="authPasswordConfirmField" hidden>Confirmer le mot de passe
+      <div class="pw-field"><input type="password" id="authPasswordConfirm" minlength="8"><button type="button" class="pw-toggle" data-target="authPasswordConfirm">Afficher</button></div>
+    </label>
     <button type="submit" class="dl-btn" id="authSubmitBtn">Se connecter</button>
   </form>
   <p class="form-note" id="authNote">Connexion à ton compte SixteenMarket.</p>
@@ -424,7 +430,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
-  console.log('SixteenMarket — build 2026-08-28');
+  console.log('SixteenMarket — build 2026-08-29 (corrections sécurité)');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var pointerFine = window.matchMedia('(pointer: fine)').matches;
   var pendingRedirect = null;
@@ -443,6 +449,12 @@
     'linear-gradient(135deg,var(--amber),var(--turquoise))',
     'linear-gradient(135deg,var(--turquoise),var(--coral))'
   ];
+
+  function escapeHtml(str){
+    return String(str===null||str===undefined?'':str).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
 
   var overlay = document.getElementById('pageTransition');
   var overlaySvg = overlay.querySelector('svg');
@@ -500,11 +512,11 @@
     grid.innerHTML = list.map(function(a){
       var i = state.apps.indexOf(a);
       var iconHtml = a.icon_url
-        ? '<div class="app-icon" style="background-image:url(\''+a.icon_url+'\');background-size:cover;background-position:center;"></div>'
+        ? '<div class="app-icon" style="background-image:url(\''+encodeURI(a.icon_url)+'\');background-size:cover;background-position:center;"></div>'
         : '<div class="app-icon" style="background:'+gradients[i%gradients.length]+'"></div>';
-      return '<button class="app-tile" data-open-app="'+a.id+'">'+
+      return '<button class="app-tile" data-open-app="'+escapeHtml(a.id)+'">'+
         iconHtml+
-        '<div class="app-info"><h3>'+a.name+'</h3><p>'+a.description+'</p></div>'+
+        '<div class="app-info"><h3>'+escapeHtml(a.name)+'</h3><p>'+escapeHtml(a.description)+'</p></div>'+
       '</button>';
     }).join('');
   }
@@ -519,19 +531,19 @@
     if(!app) return;
     var idx = state.apps.indexOf(app);
     var thumbHtml = app.icon_url
-      ? '<div class="thumb-big" style="background-image:url(\''+app.icon_url+'\');background-size:cover;background-position:center;"></div>'
+      ? '<div class="thumb-big" style="background-image:url(\''+encodeURI(app.icon_url)+'\');background-size:cover;background-position:center;"></div>'
       : '<div class="thumb-big" style="background:'+gradients[idx%gradients.length]+'"></div>';
     var shots = app.screenshots && app.screenshots.length ? app.screenshots : null;
     var shotsHtml = shots
-      ? shots.map(function(s){ return '<div class="screenshot" style="background-image:url(\''+s.url+'\');background-size:cover;background-position:center;"></div>'; }).join('')
+      ? shots.map(function(s){ return '<div class="screenshot" style="background-image:url(\''+encodeURI(s.url)+'\');background-size:cover;background-position:center;"></div>'; }).join('')
       : [1,2,3].map(function(k){ return '<div class="screenshot" style="background:'+gradients[(idx+k)%gradients.length]+'"></div>'; }).join('');
     document.getElementById('ficheContent').innerHTML =
       thumbHtml+
       '<div class="screenshots-row">'+shotsHtml+'</div>'+
-      '<h2>'+app.name+'</h2><p class="fiche-desc">'+app.description+'</p>'+
-      '<div class="meta-row"><span>v'+app.version+'</span><span>'+app.size+'</span><span>'+app.format+'</span></div>'+
-      '<div class="dl-row"><button class="dl-btn" data-app-id="'+app.id+'">Télécharger</button>'+
-      '<span class="dl-count"><span id="ficheDlCount">'+app.downloads+'</span> téléchargements</span></div>';
+      '<h2>'+escapeHtml(app.name)+'</h2><p class="fiche-desc">'+escapeHtml(app.description)+'</p>'+
+      '<div class="meta-row"><span>v'+escapeHtml(app.version)+'</span><span>'+escapeHtml(app.size)+'</span><span>'+escapeHtml(app.format)+'</span></div>'+
+      '<div class="dl-row"><button class="dl-btn" data-app-id="'+escapeHtml(app.id)+'">Télécharger</button>'+
+      '<span class="dl-count"><span id="ficheDlCount">'+escapeHtml(app.downloads)+'</span> téléchargements</span></div>';
     goToScreen('fiche');
   }
 
@@ -545,7 +557,13 @@
     var countEl = document.getElementById('ficheDlCount');
     if(countEl) countEl.textContent = app.downloads;
     confettiBurst(btn);
-    sb.rpc('increment_downloads', { app_id: appId }).then(function(res){ if(res.error) console.error(res.error); });
+    sb.rpc('increment_downloads', { app_id: appId }).then(function(res){
+      if(res.error){
+        console.error(res.error);
+        app.downloads = Math.max((app.downloads||1) - 1, 0);
+        if(countEl) countEl.textContent = app.downloads;
+      }
+    });
   });
 
   function confettiBurst(btn){
@@ -573,7 +591,7 @@
   function renderChat(){
     var box = document.getElementById('chatMessages');
     box.innerHTML = state.chatMessages.map(function(m){
-      return '<div class="chat-bubble"><strong>'+m.author+'</strong><span>'+m.text+'</span></div>';
+      return '<div class="chat-bubble"><strong>'+escapeHtml(m.author)+'</strong><span>'+escapeHtml(m.text)+'</span></div>';
     }).join('');
     box.scrollTop = box.scrollHeight;
   }
@@ -686,8 +704,7 @@
     else{ input.type = 'password'; toggle.textContent = 'Afficher'; }
   });
 
-  var sb = supabase.createClient('https://txbvpddpsejtfjvixdfw.supabase.co', 'sb_publishable_DzvshGmn8ev43bDoPlpnkQ_BIMINTsR', { auth: { persistSession: false } });
-  var ADMIN_EMAIL = 'epiamale@gmail.com';
+  var sb = supabase.createClient('https://txbvpddpsejtfjvixdfw.supabase.co', 'sb_publishable_DzvshGmn8ev43bDoPlpnkQ_BIMINTsR', { auth: { persistSession: true } });
   var authMode = 'login';
 
   function applySession(session){
@@ -695,11 +712,14 @@
     state.loggedIn = true;
     state.email = session.user.email;
     state.pseudo = (session.user.user_metadata && session.user.user_metadata.pseudo) || session.user.email.split('@')[0];
-    state.isAdmin = session.user.email === ADMIN_EMAIL;
+    // Le statut admin vient de app_metadata (défini côté serveur uniquement,
+    // impossible à modifier par l'utilisateur via updateUser) — voir le
+    // script SQL fourni à part pour la mise en place côté Supabase.
+    state.isAdmin = !!(session.user.app_metadata && session.user.app_metadata.role === 'admin');
     document.getElementById('authNavLink').hidden = true;
     var navUser = document.getElementById('navUser');
     navUser.hidden = false;
-    navUser.innerHTML = '<a href="#" id="navUserPseudo" data-screen="parametres">'+state.pseudo+'</a> · <a href="#" id="logoutLink">Déconnexion</a>';
+    navUser.innerHTML = '<a href="#" id="navUserPseudo" data-screen="parametres">'+escapeHtml(state.pseudo)+'</a> · <a href="#" id="logoutLink">Déconnexion</a>';
     document.getElementById('adminNavLink').hidden = !state.isAdmin;
     loadMessages();
     if(state.isAdmin) renderAdmin();
@@ -738,6 +758,7 @@
       authMode = tab.getAttribute('data-auth-mode');
       document.querySelectorAll('.auth-tab').forEach(function(t){ t.classList.toggle('active', t===tab); });
       document.getElementById('pseudoField').hidden = (authMode!=='signup');
+      document.getElementById('authPasswordConfirmField').hidden = (authMode!=='signup');
       document.getElementById('authSubmitBtn').textContent = authMode==='signup' ? 'Créer mon compte' : 'Se connecter';
       var note = document.getElementById('authNote');
       note.style.color = 'var(--ink-soft)';
@@ -755,6 +776,11 @@
     if(authMode==='signup' && !passwordStrengthInfo(password).valid){
       note.style.color = 'var(--coral-deep)';
       note.textContent = 'Choisis un mot de passe plus fort avant de créer ton compte (8 caractères min., majuscule, minuscule, chiffre).';
+      return;
+    }
+    if(authMode==='signup' && password !== document.getElementById('authPasswordConfirm').value){
+      note.style.color = 'var(--coral-deep)';
+      note.textContent = 'Les deux mots de passe ne correspondent pas.';
       return;
     }
     btn.disabled = true;
@@ -800,11 +826,18 @@
     if(!state.isAdmin){ locked.hidden=false; unlocked.hidden=true; return; }
     locked.hidden=true; unlocked.hidden=false;
     document.getElementById('adminAppsList').innerHTML = state.apps.map(function(a){
-      return '<li>'+a.name+' <button class="mini-btn" data-del-app="'+a.id+'">Supprimer</button></li>';
+      return '<li>'+escapeHtml(a.name)+' <button class="mini-btn" data-del-app="'+escapeHtml(a.id)+'">Supprimer</button></li>';
     }).join('');
     document.getElementById('adminMessagesList').innerHTML = state.chatMessages.map(function(m){
-      return '<li><strong>'+m.author+'</strong> : '+m.text+' <button class="mini-btn" data-del-msg="'+m.id+'">Supprimer</button> <button class="mini-btn danger" data-ban="'+(m.author_email||'')+'">Bannir</button></li>';
+      return '<li><strong>'+escapeHtml(m.author)+'</strong> : '+escapeHtml(m.text)+' <button class="mini-btn" data-del-msg="'+escapeHtml(m.id)+'">Supprimer</button> <button class="mini-btn danger" data-ban="'+escapeHtml(m.author_email||'')+'">Bannir</button></li>';
     }).join('');
+  }
+  var MAX_FILE_SIZE = 5 * 1024 * 1024;
+  function validateImageFile(file){
+    if(!file) return null;
+    if(!file.type || file.type.indexOf('image/') !== 0) return "Le fichier \""+file.name+"\" n'est pas une image.";
+    if(file.size > MAX_FILE_SIZE) return "Le fichier \""+file.name+"\" dépasse 5 Mo.";
+    return null;
   }
   function uploadAppMedia(file, folder){
     var path = folder+'/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'-'+file.name.replace(/[^a-zA-Z0-9.\-_]/g,'_');
@@ -818,8 +851,16 @@
     var form = e.target;
     var iconFile = document.getElementById('newAppIcon').files[0];
     var shotFiles = Array.prototype.slice.call(document.getElementById('newAppScreenshots').files);
+
+    var filesToValidate = (iconFile ? [iconFile] : []).concat(shotFiles);
+    for(var vi=0; vi<filesToValidate.length; vi++){
+      var validationError = validateImageFile(filesToValidate[vi]);
+      if(validationError){ alert(validationError); return; }
+    }
+
     var submitBtn = form.querySelector('button[type=submit]');
     submitBtn.disabled = true;
+    var createdAppId = null;
 
     var iconPromise = iconFile ? uploadAppMedia(iconFile, 'icons') : Promise.resolve(null);
 
@@ -835,6 +876,7 @@
     }).then(function(res){
       if(res.error) throw res.error;
       var newApp = res.data;
+      createdAppId = newApp.id;
       return Promise.all(shotFiles.map(function(file, i){
         return uploadAppMedia(file, 'screenshots').then(function(url){
           return sb.from('app_screenshots').insert({ app_id:newApp.id, url:url, position:i });
@@ -846,7 +888,12 @@
       loadApps();
     }).catch(function(err){
       submitBtn.disabled = false;
-      alert('Erreur : '+(err && err.message ? err.message : err));
+      var msg = 'Erreur : '+(err && err.message ? err.message : err);
+      if(createdAppId){
+        sb.from('apps').delete().eq('id', createdAppId).then(function(){ loadApps(); });
+        msg = "L'ajout des captures d'écran a échoué : l'app vient d'être retirée, réessaie. Détail : "+(err && err.message ? err.message : err);
+      }
+      alert(msg);
     });
   });
   document.getElementById('adminAppsList').addEventListener('click', function(e){
@@ -967,8 +1014,8 @@
     });
   }
   function loadMessages(){
-    sb.from('messages').select('*').order('created_at',{ascending:true}).limit(200).then(function(res){
-      state.chatMessages = res.data || [];
+    sb.from('messages').select('*').order('created_at',{ascending:false}).limit(200).then(function(res){
+      state.chatMessages = (res.data || []).slice().reverse();
       renderChat();
       if(state.isAdmin) renderAdmin();
     });
