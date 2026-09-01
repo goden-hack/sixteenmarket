@@ -154,10 +154,22 @@
   .fiche-card{background:var(--paper-deep);max-width:560px;padding:2rem;clip-path:polygon(1.5% 2%,98% 0%,100% 97%,2% 100%);box-shadow:5px 8px 0 rgba(62,54,44,.1);position:relative;z-index:2;}
   .thumb-big{width:100%;height:180px;border-radius:6% 10% 8% 12%/10% 6% 12% 8%;margin-bottom:1.2rem;}
   .screenshots-row{display:flex;gap:.6rem;margin-bottom:1rem;}
+  .ss-viewer{position:relative;width:100%;height:220px;border-radius:6% 10% 8% 12%/10% 6% 12% 8%;overflow:hidden;margin-bottom:.6rem;background:var(--paper-deep);}
+  .ss-main{width:100%;height:100%;background-size:cover;background-position:center;}
+  .ss-nav{
+    position:absolute;top:50%;transform:translateY(-50%);
+    background:rgba(62,54,44,.55);color:var(--paper);border:none;
+    width:2.2rem;height:2.2rem;border-radius:50%;font-size:1.2rem;line-height:1;cursor:pointer;
+  }
+  .ss-prev{left:.6rem;}
+  .ss-next{right:.6rem;}
+  .ss-dots{display:flex;gap:.4rem;justify-content:center;margin-bottom:1rem;}
+  .ss-dot{width:8px;height:8px;border-radius:50%;background:var(--paper-deep);cursor:pointer;border:none;padding:0;}
+  .ss-dot.active{background:var(--coral-deep);}
   .screenshot{flex:1;height:90px;border-radius:8% 12% 10% 14%/10% 8% 14% 12%;}
   .fiche-desc{color:var(--ink-soft);margin:.6rem 0 1rem;}
   .dl-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
-  .dl-btn{background:var(--coral-deep);color:var(--paper);border:none;font-family:'Quicksand',sans-serif;font-weight:700;font-size:.95rem;padding:.6rem 1.3rem;border-radius:40px 10px 40px 10px;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+  .dl-btn{display:inline-block;background:var(--coral-deep);color:var(--paper);border:none;font-family:'Quicksand',sans-serif;font-weight:700;font-size:.95rem;padding:.6rem 1.3rem;border-radius:40px 10px 40px 10px;cursor:pointer;text-decoration:none;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
   .dl-btn:hover{transform:translateY(-3px) rotate(-1deg);}
   .dl-btn:active{transform:translateY(0) scale(.97);}
   .dl-count{font-size:.85rem;color:var(--ink-soft);}
@@ -401,6 +413,7 @@
         <input type="text" id="newAppFormat" placeholder="Format (ex : APK)" required>
         <label class="file-field">Icône (image)<input type="file" id="newAppIcon" accept="image/*"></label>
         <label class="file-field">Captures d'écran (plusieurs images)<input type="file" id="newAppScreenshots" accept="image/*" multiple></label>
+        <label class="file-field">Fichier de l'app (APK, EXE... 50 Mo max)<input type="file" id="newAppFile" required></label>
         <button type="submit" class="dl-btn">Ajouter</button>
       </form>
     </div>
@@ -526,29 +539,81 @@
     if(tile) openFiche(tile.getAttribute('data-open-app'));
   });
 
+  var currentFicheApp = null;
+  var currentShotIndex = 0;
+
+  function renderFicheViewer(){
+    var app = currentFicheApp;
+    if(!app) return;
+    var idx = state.apps.indexOf(app);
+    var shots = (app.screenshots && app.screenshots.length) ? app.screenshots : null;
+    var main = document.getElementById('ssMain');
+    if(shots){
+      main.style.backgroundImage = "url('"+encodeURI(shots[currentShotIndex].url)+"')";
+    } else if(app.icon_url){
+      main.style.backgroundImage = "url('"+encodeURI(app.icon_url)+"')";
+    } else {
+      main.style.backgroundImage = 'none';
+      main.style.background = gradients[idx%gradients.length];
+    }
+    var nav = shots && shots.length > 1;
+    document.getElementById('ssPrev').hidden = !nav;
+    document.getElementById('ssNext').hidden = !nav;
+    var dots = document.getElementById('ssDots');
+    if(nav){
+      dots.hidden = false;
+      dots.innerHTML = shots.map(function(s,i){
+        return '<button type="button" class="ss-dot'+(i===currentShotIndex?' active':'')+'" data-idx="'+i+'" aria-label="Aperçu '+(i+1)+'"></button>';
+      }).join('');
+    } else {
+      dots.hidden = true;
+      dots.innerHTML = '';
+    }
+  }
+  document.getElementById('ssPrev').addEventListener('click', function(){
+    var shots = currentFicheApp && currentFicheApp.screenshots;
+    if(!shots || !shots.length) return;
+    currentShotIndex = (currentShotIndex - 1 + shots.length) % shots.length;
+    renderFicheViewer();
+  });
+  document.getElementById('ssNext').addEventListener('click', function(){
+    var shots = currentFicheApp && currentFicheApp.screenshots;
+    if(!shots || !shots.length) return;
+    currentShotIndex = (currentShotIndex + 1) % shots.length;
+    renderFicheViewer();
+  });
+  document.getElementById('ssDots').addEventListener('click', function(e){
+    var dot = e.target.closest('.ss-dot');
+    if(!dot) return;
+    currentShotIndex = parseInt(dot.getAttribute('data-idx'), 10) || 0;
+    renderFicheViewer();
+  });
+
   function openFiche(id){
     var app = state.apps.find(function(a){ return a.id===id; });
     if(!app) return;
-    var idx = state.apps.indexOf(app);
-    var thumbHtml = app.icon_url
-      ? '<div class="thumb-big" style="background-image:url(\''+encodeURI(app.icon_url)+'\');background-size:cover;background-position:center;"></div>'
-      : '<div class="thumb-big" style="background:'+gradients[idx%gradients.length]+'"></div>';
-    var shots = app.screenshots && app.screenshots.length ? app.screenshots : null;
-    var shotsHtml = shots
-      ? shots.map(function(s){ return '<div class="screenshot" style="background-image:url(\''+encodeURI(s.url)+'\');background-size:cover;background-position:center;"></div>'; }).join('')
-      : [1,2,3].map(function(k){ return '<div class="screenshot" style="background:'+gradients[(idx+k)%gradients.length]+'"></div>'; }).join('');
+    currentFicheApp = app;
+    currentShotIndex = 0;
+    var dlHtml = app.file_url
+      ? '<a class="dl-btn" id="ficheDlBtn" href="'+escapeHtml(encodeURI(app.file_url))+'" download data-app-id="'+escapeHtml(app.id)+'">Télécharger</a>'
+      : '<span class="dl-btn" style="opacity:.5;cursor:default;">Fichier indisponible</span>';
     document.getElementById('ficheContent').innerHTML =
-      thumbHtml+
-      '<div class="screenshots-row">'+shotsHtml+'</div>'+
+      '<div class="ss-viewer">'+
+        '<div class="ss-main" id="ssMain"></div>'+
+        '<button type="button" class="ss-nav ss-prev" id="ssPrev" hidden>‹</button>'+
+        '<button type="button" class="ss-nav ss-next" id="ssNext" hidden>›</button>'+
+      '</div>'+
+      '<div class="ss-dots" id="ssDots" hidden></div>'+
       '<h2>'+escapeHtml(app.name)+'</h2><p class="fiche-desc">'+escapeHtml(app.description)+'</p>'+
       '<div class="meta-row"><span>v'+escapeHtml(app.version)+'</span><span>'+escapeHtml(app.size)+'</span><span>'+escapeHtml(app.format)+'</span></div>'+
-      '<div class="dl-row"><button class="dl-btn" data-app-id="'+escapeHtml(app.id)+'">Télécharger</button>'+
+      '<div class="dl-row">'+dlHtml+
       '<span class="dl-count"><span id="ficheDlCount">'+escapeHtml(app.downloads)+'</span> téléchargements</span></div>';
+    renderFicheViewer();
     goToScreen('fiche');
   }
 
   document.getElementById('ficheContent').addEventListener('click', function(e){
-    var btn = e.target.closest('.dl-btn[data-app-id]');
+    var btn = e.target.closest('#ficheDlBtn[data-app-id]');
     if(!btn) return;
     var appId = btn.getAttribute('data-app-id');
     var app = state.apps.find(function(a){ return a.id===appId; });
@@ -833,10 +898,16 @@
     }).join('');
   }
   var MAX_FILE_SIZE = 5 * 1024 * 1024;
+  var MAX_APP_FILE_SIZE = 50 * 1024 * 1024;
   function validateImageFile(file){
     if(!file) return null;
     if(!file.type || file.type.indexOf('image/') !== 0) return "Le fichier \""+file.name+"\" n'est pas une image.";
     if(file.size > MAX_FILE_SIZE) return "Le fichier \""+file.name+"\" dépasse 5 Mo.";
+    return null;
+  }
+  function validateAppFile(file){
+    if(!file) return "Le fichier de l'app est requis.";
+    if(file.size > MAX_APP_FILE_SIZE) return "Le fichier \""+file.name+"\" dépasse 50 Mo (limite du plan gratuit).";
     return null;
   }
   function uploadAppMedia(file, folder){
@@ -851,27 +922,32 @@
     var form = e.target;
     var iconFile = document.getElementById('newAppIcon').files[0];
     var shotFiles = Array.prototype.slice.call(document.getElementById('newAppScreenshots').files);
+    var appFile = document.getElementById('newAppFile').files[0];
 
     var filesToValidate = (iconFile ? [iconFile] : []).concat(shotFiles);
     for(var vi=0; vi<filesToValidate.length; vi++){
       var validationError = validateImageFile(filesToValidate[vi]);
       if(validationError){ alert(validationError); return; }
     }
+    var appFileError = validateAppFile(appFile);
+    if(appFileError){ alert(appFileError); return; }
 
     var submitBtn = form.querySelector('button[type=submit]');
     submitBtn.disabled = true;
     var createdAppId = null;
 
     var iconPromise = iconFile ? uploadAppMedia(iconFile, 'icons') : Promise.resolve(null);
+    var appFilePromise = uploadAppMedia(appFile, 'files');
 
-    iconPromise.then(function(iconUrl){
+    Promise.all([iconPromise, appFilePromise]).then(function(results){
       return sb.from('apps').insert({
         name:document.getElementById('newAppName').value,
         description:document.getElementById('newAppDesc').value,
         version:document.getElementById('newAppVersion').value,
         size:document.getElementById('newAppSize').value,
         format:document.getElementById('newAppFormat').value,
-        icon_url:iconUrl
+        icon_url:results[0],
+        file_url:results[1]
       }).select().single();
     }).then(function(res){
       if(res.error) throw res.error;
@@ -891,7 +967,7 @@
       var msg = 'Erreur : '+(err && err.message ? err.message : err);
       if(createdAppId){
         sb.from('apps').delete().eq('id', createdAppId).then(function(){ loadApps(); });
-        msg = "L'ajout des captures d'écran a échoué : l'app vient d'être retirée, réessaie. Détail : "+(err && err.message ? err.message : err);
+        msg = "L'ajout a échoué en cours de route : l'app vient d'être retirée, réessaie. Détail : "+(err && err.message ? err.message : err);
       }
       alert(msg);
     });
