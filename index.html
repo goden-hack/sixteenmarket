@@ -570,25 +570,6 @@
       dots.innerHTML = '';
     }
   }
-  document.getElementById('ssPrev').addEventListener('click', function(){
-    var shots = currentFicheApp && currentFicheApp.screenshots;
-    if(!shots || !shots.length) return;
-    currentShotIndex = (currentShotIndex - 1 + shots.length) % shots.length;
-    renderFicheViewer();
-  });
-  document.getElementById('ssNext').addEventListener('click', function(){
-    var shots = currentFicheApp && currentFicheApp.screenshots;
-    if(!shots || !shots.length) return;
-    currentShotIndex = (currentShotIndex + 1) % shots.length;
-    renderFicheViewer();
-  });
-  document.getElementById('ssDots').addEventListener('click', function(e){
-    var dot = e.target.closest('.ss-dot');
-    if(!dot) return;
-    currentShotIndex = parseInt(dot.getAttribute('data-idx'), 10) || 0;
-    renderFicheViewer();
-  });
-
   function openFiche(id){
     var app = state.apps.find(function(a){ return a.id===id; });
     if(!app) return;
@@ -613,22 +594,42 @@
   }
 
   document.getElementById('ficheContent').addEventListener('click', function(e){
-    var btn = e.target.closest('#ficheDlBtn[data-app-id]');
-    if(!btn) return;
-    var appId = btn.getAttribute('data-app-id');
-    var app = state.apps.find(function(a){ return a.id===appId; });
-    if(!app) return;
-    app.downloads = (app.downloads||0) + 1;
-    var countEl = document.getElementById('ficheDlCount');
-    if(countEl) countEl.textContent = app.downloads;
-    confettiBurst(btn);
-    sb.rpc('increment_downloads', { app_id: appId }).then(function(res){
-      if(res.error){
-        console.error(res.error);
-        app.downloads = Math.max((app.downloads||1) - 1, 0);
-        if(countEl) countEl.textContent = app.downloads;
+    var prevBtn = e.target.closest('#ssPrev');
+    var nextBtn = e.target.closest('#ssNext');
+    var dot = e.target.closest('.ss-dot');
+    var dlBtn = e.target.closest('#ficheDlBtn[data-app-id]');
+
+    if(prevBtn || nextBtn){
+      var shots = currentFicheApp && currentFicheApp.screenshots;
+      if(shots && shots.length){
+        currentShotIndex = prevBtn
+          ? (currentShotIndex - 1 + shots.length) % shots.length
+          : (currentShotIndex + 1) % shots.length;
+        renderFicheViewer();
       }
-    });
+      return;
+    }
+    if(dot){
+      currentShotIndex = parseInt(dot.getAttribute('data-idx'), 10) || 0;
+      renderFicheViewer();
+      return;
+    }
+    if(dlBtn){
+      var appId = dlBtn.getAttribute('data-app-id');
+      var app = state.apps.find(function(a){ return a.id===appId; });
+      if(!app) return;
+      app.downloads = (app.downloads||0) + 1;
+      var countEl = document.getElementById('ficheDlCount');
+      if(countEl) countEl.textContent = app.downloads;
+      confettiBurst(dlBtn);
+      sb.rpc('increment_downloads', { app_id: appId }).then(function(res){
+        if(res.error){
+          console.error(res.error);
+          app.downloads = Math.max((app.downloads||1) - 1, 0);
+          if(countEl) countEl.textContent = app.downloads;
+        }
+      });
+    }
   });
 
   function confettiBurst(btn){
